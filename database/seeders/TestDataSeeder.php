@@ -7,13 +7,18 @@ use App\Models\CvTier;
 use App\Models\KycDocument;
 use App\Models\MlmTree;
 use App\Models\Pin;
+use App\Models\Sponsor;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WithdrawalRequest;
+use App\Services\CvService;
+use App\Services\MlmTreeService;
 use App\Services\PinService;
 use App\Services\WalletService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class TestDataSeeder extends Seeder
@@ -21,6 +26,8 @@ class TestDataSeeder extends Seeder
     public function __construct(
         private WalletService $walletService,
         private PinService $pinService,
+        private CvService $cvService,
+        private MlmTreeService $treeService,
     ) {}
 
     public function run(): void
@@ -35,12 +42,15 @@ class TestDataSeeder extends Seeder
         }
 
         $this->seedAdminWallet($admin);
+        $this->seedMonthlyEarnings($admin);
         $this->seedAdminCommissions($admin);
         $this->seedAdminWithdrawals($admin);
         $this->seedWithdrawals($admin, $root);
         $this->seedTickets($admin, $root);
         $this->seedKyc($admin);
         $this->seedPins($admin);
+        $this->seedTreeRestructure($admin, $root);
+        $this->seedRightLegCv($root);
 
         $this->command?->info('Test data seeded successfully.');
     }
@@ -97,6 +107,39 @@ class TestDataSeeder extends Seeder
         }
     }
 
+    private function seedMonthlyEarnings(User $admin): void
+    {
+        if (Transaction::where('reference', 'like', 'TEST-MONTHLY-%')->count() >= 6) {
+            return;
+        }
+
+        $months = [
+            ['interest', 820, 5],
+            ['commission', 640, 4],
+            ['interest', 905, 3],
+            ['commission', 715, 2],
+            ['interest', 780, 1],
+            ['commission', 860, 0],
+        ];
+
+        foreach ($months as [$category, $amount, $monthsAgo]) {
+            $transaction = $this->walletService->credit(
+                $admin->id,
+                $amount,
+                $category,
+                'TEST-MONTHLY-'.Str::upper(Str::random(6)),
+                $category === 'interest' ? 'Monthly interest credit' : 'Commission payout'
+            );
+
+            $date = now()->subMonths($monthsAgo)->startOfMonth()->addDays(rand(5, 20));
+
+            $transaction->update([
+                'created_at' => $date,
+                'updated_at' => $date,
+            ]);
+        }
+    }
+
     private function seedAdminWithdrawals(User $admin): void
     {
         if (WithdrawalRequest::where('user_id', $admin->id)->exists()) {
@@ -141,10 +184,6 @@ class TestDataSeeder extends Seeder
 
     private function seedWithdrawals(User $admin, User $root): void
     {
-        if (WithdrawalRequest::count() > 0) {
-            return;
-        }
-
         $tara = User::where('email', 'tara.pillai@mlm.local')->first();
         $aditya = User::where('email', 'aditya.gupta@mlm.local')->first();
         $ananya = User::where('email', 'ananya.iyer@mlm.local')->first();
@@ -172,8 +211,20 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($withdrawals as [$user, $amount, $status]) {
-            if (! $user || $user->wallet->balance < $amount) {
+            if (! $user || WithdrawalRequest::where('user_id', $user->id)->exists()) {
                 continue;
+            }
+
+            $user->load('wallet');
+
+            if ($user->wallet?->balance < $amount) {
+                $this->walletService->credit(
+                    $user->id,
+                    $amount - $user->wallet->balance + 50,
+                    'commission',
+                    'TEST-TOPUP-'.Str::upper(Str::random(6)),
+                    'Demo commission top-up'
+                );
             }
 
             $this->walletService->hold($user->id, $amount);
@@ -321,6 +372,124 @@ class TestDataSeeder extends Seeder
                     'used_at' => now()->subDays(5),
                 ]);
             }
+        }
+    }
+
+    private function seedTreeRestructure(User $admin, User $root): void
+    {
+        if ($admin->treeNode) {
+            return;
+        }
+
+        $rootNode = MlmTree::where('user_id', $root->id)->first();
+
+        if (! $rootNode) {
+            return;
+        }
+
+        $adminNode = $this->treeService->createRoot($admin);
+
+        $oldRootPath = '/'.$rootNode->id.'/';
+        $newLeftPath = '/'.$adminNode->id.'/';
+        $newRightPath = '/'.$adminNode->id.'/';
+
+        $priya = MlmTree::where('user_id', User::where('email', 'priya.patel@mlm.local')->value('id'))->first();
+
+        $rootNode->update([
+            'parent_id' => $adminNode->id,
+            'position' => 'left',
+            'level' => 1,
+            'path' => $newLeftPath,
+        ]);
+
+        $leftSubtree = MlmTree::where('path', 'like', $oldRootPath.'%');
+
+        if ($priya) {
+            $leftSubtree->where('id', '!=', $priya->id)
+                ->where('path', 'not like', $oldRootPath.$priya->id.'/%');
+        }
+
+        $leftSubtree->update([
+            'path' => DB::raw("REPLACE(path, '$oldRootPath', '$newLeftPath'.$rootNode->id.'/')"),
+            'level' => DB::raw('level + 1'),
+        ]);
+
+        if ($priya) {
+            $priya->update([
+                'parent_id' => $adminNode->id,
+                'position' => 'right',
+                'level' => 1,
+                'path' => $newRightPath,
+            ]);
+
+            MlmTree::where('path', 'like', $oldRootPath.$priya->id.'/%')
+                ->update(['path' => DB::raw("REPLACE(path, '$oldRootPath', '$newRightPath')")]);
+        }
+    }
+
+    private function seedRightLegCv(User $root): void
+    {
+        if (User::where('email', 'balance01@mlm.local')->exists()) {
+            return;
+        }
+
+        $tiers = \App\Models\CvTier::where('status', 'active')->pluck('id', 'amount');
+
+        $priya = User::where('email', 'priya.patel@mlm.local')->first();
+        $placeUnder = $priya ?? $root;
+
+        $members = [
+            ['balance01@mlm.local', 'Rohan Khanna', 'MLMB001', 1500],
+            ['balance02@mlm.local', 'Priyanka Saxena', 'MLMB002', 1500],
+            ['balance03@mlm.local', 'Varun Malhotra', 'MLMB003', 800],
+            ['balance04@mlm.local', 'Kavya Nair', 'MLMB004', 400],
+            ['balance05@mlm.local', 'Arnav Deshmukh', 'MLMB005', 200],
+            ['balance06@mlm.local', 'Ritika Sharma', 'MLMB006', 1500],
+            ['balance07@mlm.local', 'Mohit Kapoor', 'MLMB007', 800],
+            ['balance08@mlm.local', 'Sana Qureshi', 'MLMB008', 800],
+        ];
+
+        foreach ($members as [$email, $name, $uniqueId, $amount]) {
+            $user = User::create([
+                'unique_id' => $uniqueId,
+                'sponsor_id' => $root->id,
+                'name' => $name,
+                'email' => $email,
+                'password' => bcrypt('password'),
+                'role' => 'member',
+                'status' => 'active',
+                'kyc_status' => 'approved',
+            ]);
+            $user->assignRole('member');
+
+            Sponsor::updateOrCreate(
+                ['sponsee_id' => $user->id],
+                ['sponsor_id' => $root->id, 'type' => 'direct']
+            );
+
+            $this->treeService->place($user, $placeUnder->id);
+            $this->walletService->ensureWallet($user->id);
+
+            $this->activateCv($user, $tiers[$amount] ?? $tiers->first());
+        }
+
+        if ($priya && ! $priya->purchases()->where('status', 'activated')->exists()) {
+            $this->activateCv($priya, $tiers[800] ?? $tiers->first());
+        }
+    }
+
+    private function activateCv(User $user, ?int $tierId): void
+    {
+        if (! $tierId) {
+            return;
+        }
+
+        try {
+            $purchase = $this->cvService->purchase($user->id, $tierId, 'bank');
+            $this->cvService->markPaid($purchase->id);
+            $this->cvService->activate($user->id, $purchase->id);
+        } catch (\Throwable $e) {
+            $this->command?->warn('Skipped CV activation for '.$user->email.': '.$e->getMessage());
         }
     }
 }
