@@ -1,0 +1,71 @@
+name: mlm-software
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mlm-software-app
+    container_name: mlm-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - mlm_vendor:/var/www/html/vendor
+      - mlm_node_modules:/var/www/html/node_modules
+      - mlm_storage:/var/www/html/storage
+    env_file:
+      - .env
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=mlm_software
+      - DB_USERNAME=mlm
+      - DB_PASSWORD=mlm-secret
+      - REDIS_HOST=cache
+    depends_on:
+      - db
+      - cache
+    ports:
+      - "80:80"
+    networks:
+      - mlm_network
+
+  db:
+    image: mysql:8.0
+    container_name: mlm-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mlm_software
+      MYSQL_USER: mlm
+      MYSQL_PASSWORD: mlm-secret
+      MYSQL_ROOT_PASSWORD: root-secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - mlm_mysql:/var/lib/mysql
+    networks:
+      - mlm_network
+
+  cache:
+    image: redis:7-alpine
+    container_name: mlm-cache
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - mlm_redis:/data
+    networks:
+      - mlm_network
+
+networks:
+  mlm_network:
+    driver: bridge
+
+volumes:
+  mlm_storage:
+  mlm_vendor:
+  mlm_node_modules:
+  mlm_mysql:
+  mlm_redis:

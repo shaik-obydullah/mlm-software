@@ -1,0 +1,18 @@
+# Docker build context exclusions
+vendor
+node_modules
+storage/logs/*.log
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+.env
+.git
+.github
+tests
+mlm-software-plan.md
+session.txt
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
