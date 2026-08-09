@@ -12,21 +12,46 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 class="text-sm font-semibold text-slate-900 mb-4">Request Withdrawal</h3>
-                <form method="POST" action="{{ route('web.wallet.withdraw') }}" class="space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden h-fit">
+                <div class="bg-gradient-to-r from-brand-600 to-brand-700 px-5 py-4 text-white">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold leading-tight">Request Withdrawal</h3>
+                            <p class="text-xs text-brand-100">Funds are locked until approved</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('web.wallet.withdraw') }}" class="p-5 space-y-4">
                     @csrf
                     <div>
-                        <label class="block text-sm font-medium text-slate-700">Amount</label>
-                        <input type="number" name="amount" min="1" step="0.01" required
-                               class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-brand-500 focus:ring-brand-500">
+                        <label for="amount" class="block text-sm font-medium text-slate-700">Amount</label>
+                        <div class="relative mt-1.5">
+                            <input id="amount" type="number" name="amount" min="1" step="0.01" required placeholder="e.g. 1000"
+                                   class="w-full rounded-xl border-slate-300 bg-slate-50/50 py-3 px-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:bg-white focus:border-brand-500 focus:ring-brand-500 focus:ring-2">
+                        </div>
                     </div>
-                    <div class="text-xs text-slate-500 space-y-1">
-                        <p>Available: <span class="font-medium text-slate-700">{{ money($wallet->balance) }}</span></p>
-                        <p>Withdrawal fee: {{ (float) setting('withdrawal_fee_percent', 0) }}%</p>
-                        <p>Minimum: {{ money((float) setting('min_withdrawal', 100)) }}</p>
+
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-500 space-y-1.5">
+                        <div class="flex justify-between">
+                            <span>Available balance</span>
+                            <span class="font-semibold text-slate-700">{{ money($wallet->balance) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Withdrawal fee</span>
+                            <span class="font-medium">{{ (float) setting('withdrawal_fee_percent', 0) }}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Minimum withdrawal</span>
+                            <span class="font-medium">{{ money((float) setting('min_withdrawal', 100)) }}</span>
+                        </div>
                     </div>
-                    <button type="submit" class="w-full rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold py-2.5 transition-colors">
+
+                    <button type="submit"
+                            class="w-full rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold py-3 shadow-md shadow-brand-600/25 transition-all hover:shadow-lg hover:shadow-brand-600/30 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
                         Submit request
                     </button>
                 </form>

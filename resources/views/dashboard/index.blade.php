@@ -10,32 +10,34 @@
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <x-stat-card label="Wallet Balance" value="{{ money($stats['balance']) }}" icon="wallet" color="emerald" />
-            <x-stat-card label="Total Earned" value="{{ money($stats['total_earned']) }}" icon="chart" color="brand" />
-            <x-stat-card label="Active CV" value="{{ number_format($stats['active_cv']) }} CV" icon="cv" color="amber" />
-            <x-stat-card label="Downline" value="{{ $stats['downline'] }} members" icon="users" color="sky" />
+            <x-stat-card label="Wallet Balance" value="{{ money($stats['balance']) }}" icon="wallet" gradient="emerald" />
+            <x-stat-card label="Total Earned" value="{{ money($stats['total_earned']) }}" icon="chart" gradient="brand" />
+            <x-stat-card label="Active CV" value="{{ number_format($stats['active_cv']) }} CV" icon="cv" gradient="amber" />
+            <x-stat-card label="Downline" value="{{ $stats['downline'] }} members" icon="users" gradient="sky" />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-xl border border-slate-200 p-5">
-                    <div class="flex items-center justify-between mb-4">
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                         <h3 class="text-sm font-semibold text-slate-900">Binary Tree Balance</h3>
                         <a href="{{ route('web.tree') }}" class="text-xs text-brand-600 hover:text-brand-700 font-medium">View tree →</a>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
-                            <div class="text-xs text-emerald-700 font-medium">Left Leg</div>
-                            <div class="text-xl font-bold text-emerald-800 mt-1">{{ number_format($volumes['left']) }} CV</div>
+                    <div class="p-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 shadow-md shadow-emerald-500/20">
+                                <div class="text-xs text-emerald-50 font-medium">Left Leg</div>
+                                <div class="text-xl font-bold mt-1">{{ number_format($volumes['left']) }} CV</div>
+                            </div>
+                            <div class="rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 text-white p-4 shadow-md shadow-sky-500/20">
+                                <div class="text-xs text-sky-50 font-medium">Right Leg</div>
+                                <div class="text-xl font-bold mt-1">{{ number_format($volumes['right']) }} CV</div>
+                            </div>
                         </div>
-                        <div class="rounded-lg bg-sky-50 border border-sky-200 p-4">
-                            <div class="text-xs text-sky-700 font-medium">Right Leg</div>
-                            <div class="text-xl font-bold text-sky-800 mt-1">{{ number_format($volumes['right']) }} CV</div>
+                        <div class="mt-3 text-xs text-slate-500">
+                            Matched volume: <span class="font-semibold text-slate-700">{{ number_format(min($volumes['left'], $volumes['right'])) }} CV</span>
+                            · Estimated matching bonus: <span class="font-semibold text-emerald-600">{{ money(min($volumes['left'], $volumes['right']) * 0.05) }}</span>
                         </div>
-                    </div>
-                    <div class="mt-3 text-xs text-slate-500">
-                        Matched volume: <span class="font-semibold text-slate-700">{{ number_format(min($volumes['left'], $volumes['right'])) }} CV</span>
-                        · Estimated matching bonus: <span class="font-semibold text-emerald-600">{{ money(min($volumes['left'], $volumes['right']) * 0.05) }}</span>
                     </div>
                 </div>
 
@@ -90,17 +92,37 @@
             <div class="space-y-6">
                 <div class="bg-white rounded-xl border border-slate-200 p-5">
                     <h3 class="text-sm font-semibold text-slate-900 mb-4">Monthly Earnings</h3>
+                    @php
+                        $chartMax = max((float) $monthly->max(), 1);
+                        $monthLabels = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        $chartColors = [
+                            'from-rose-500 to-rose-400',
+                            'from-amber-500 to-amber-400',
+                            'from-emerald-500 to-emerald-400',
+                            'from-sky-500 to-sky-400',
+                            'from-violet-500 to-violet-400',
+                            'from-brand-500 to-brand-400',
+                        ];
+                    @endphp
                     @if($monthly->isEmpty())
-                        <p class="text-sm text-slate-500">No earnings yet.</p>
+                        <div class="py-8 text-center">
+                            <p class="text-sm text-slate-500">No earnings yet. Activate a CV package to start earning.</p>
+                        </div>
                     @else
-                        <div class="flex items-end gap-2 h-40">
-                            @foreach($monthly as $month => $total)
-                                <div class="flex-1 flex flex-col items-center gap-1" title="{{ $month }}: {{ money($total) }}">
-                                    <div class="w-full rounded-t bg-brand-500 hover:bg-brand-600 transition-colors"
-                                         style="height: {{ ($total / $monthly->max()) * 140 }}px"></div>
-                                    <span class="text-[10px] text-slate-500">{{ substr($month, 5) }}</span>
+                        <div class="flex items-end gap-2 h-44">
+                            @foreach($monthly as $i => $total)
+                                <div class="flex-1 flex flex-col items-center gap-1 group"
+                                     title="{{ $i }}: {{ money($total) }}">
+                                    <span class="text-[10px] font-semibold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">{{ money($total) }}</span>
+                                    <div class="w-full rounded-t-md bg-gradient-to-t shadow-md {{ $chartColors[$loop->index % count($chartColors)] }} group-hover:opacity-80 transition-opacity"
+                                         style="height: {{ max(($total / $chartMax) * 132, 4) }}px"></div>
+                                    <span class="text-[10px] text-slate-500">{{ $monthLabels[(int) substr($i, 5)] ?? substr($i, 5) }}</span>
                                 </div>
                             @endforeach
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <span>Last 6 months</span>
+                            <span class="font-semibold text-brand-600">Total: {{ money($monthly->sum()) }}</span>
                         </div>
                     @endif
                 </div>
@@ -110,11 +132,22 @@
                     @if($recentTransactions->isEmpty())
                         <p class="text-sm text-slate-500">No transactions yet.</p>
                     @else
-                        <div class="space-y-3">
+                        <div class="space-y-2.5">
                             @foreach($recentTransactions as $t)
-                                <div class="flex items-center justify-between text-sm">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <span class="w-2 h-2 rounded-full shrink-0 {{ $t->type === 'credit' ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                @php
+                                    $activityColors = [
+                                        'commission' => ['bg-emerald-100 text-emerald-700', 'bg-emerald-500'],
+                                        'withdrawal' => ['bg-sky-100 text-sky-700', 'bg-sky-500'],
+                                        'interest' => ['bg-amber-100 text-amber-700', 'bg-amber-500'],
+                                        'bonus' => ['bg-violet-100 text-violet-700', 'bg-violet-500'],
+                                        'purchase' => ['bg-rose-100 text-rose-700', 'bg-rose-500'],
+                                        'adjustment' => ['bg-slate-100 text-slate-600', 'bg-slate-400'],
+                                    ];
+                                    $act = $activityColors[$t->category] ?? $activityColors['adjustment'];
+                                @endphp
+                                <div class="flex items-center justify-between text-sm p-2.5 rounded-lg bg-slate-50/70 border border-slate-100">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="w-7 h-7 rounded-lg {{ $act[0] }} flex items-center justify-center text-[10px] font-bold uppercase shrink-0">{{ substr($t->category, 0, 2) }}</span>
                                         <span class="text-slate-600 truncate">{{ ucfirst($t->category) }}</span>
                                     </div>
                                     <span class="font-medium {{ $t->type === 'credit' ? 'text-emerald-600' : 'text-rose-600' }}">
@@ -128,14 +161,4 @@
             </div>
         </div>
     </div>
-
-    <style>
-        .badge {
-            @apply inline-block px-2 py-0.5 rounded-full text-[11px] font-medium;
-        }
-        .badge.sponsor { @apply bg-emerald-50 text-emerald-700; }
-        .badge.matching { @apply bg-sky-50 text-sky-700; }
-        .badge.level { @apply bg-amber-50 text-amber-700; }
-        .badge.royalty { @apply bg-violet-50 text-violet-700; }
-    </style>
 @endsection

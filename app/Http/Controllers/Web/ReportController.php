@@ -61,8 +61,15 @@ class ReportController extends Controller
             default => abort(404),
         };
 
+        $defaultHeaders = [
+            'commissions' => ['Date', 'Type', 'Level', 'Amount', 'Status'],
+            'transactions' => ['Date', 'Type', 'Category', 'Amount', 'Balance'],
+            'withdrawals' => ['Date', 'Amount', 'Fee', 'Net', 'Status'],
+            'downline' => ['Level', 'Position', 'Member', 'Name', 'Status'],
+        ];
+
         $title = ucfirst($type).' Report';
-        $headers = $rows->first() ? array_keys($rows->first()) : [];
+        $headers = $rows->first() ? array_keys($rows->first()) : ($defaultHeaders[$type] ?? []);
 
         if (request('format') === 'pdf') {
             $pdf = Pdf::loadView('exports.table', [

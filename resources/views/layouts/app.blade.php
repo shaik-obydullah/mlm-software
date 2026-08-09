@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full">
-    <div x-data="{ sidebarOpen: false }" class="min-h-full">
+    <div x-data="{ sidebarOpen: false }" class="min-h-full lg:flex">
         <div x-cloak x-show="sidebarOpen" x-transition.opacity
              class="fixed inset-0 z-40 bg-slate-900/60 lg:hidden"
              @click="sidebarOpen = false"></div>
@@ -39,11 +39,11 @@
 
                 @if(auth()->user()->isAdmin())
                     <div class="pt-4 pb-1 text-[11px] uppercase tracking-wider text-brand-300 px-3">Administration</div>
-                    <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}">Members</a>
-                    <a href="{{ route('admin.pins') }}" class="nav-link">PIN Management</a>
-                    <a href="{{ route('admin.withdrawals') }}" class="nav-link">Withdrawals</a>
-                    <a href="{{ route('admin.kyc') }}" class="nav-link">KYC Review</a>
-                    <a href="{{ route('admin.settings') }}" class="nav-link">Settings</a>
+                    <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}">Members</a>
+                    <a href="{{ route('admin.pins') }}" class="nav-link {{ request()->routeIs('admin.pins') ? 'active' : '' }}">PIN Management</a>
+                    <a href="{{ route('admin.withdrawals') }}" class="nav-link {{ request()->routeIs('admin.withdrawals') ? 'active' : '' }}">Withdrawals</a>
+                    <a href="{{ route('admin.kyc') }}" class="nav-link {{ request()->routeIs('admin.kyc') ? 'active' : '' }}">KYC Review</a>
+                    <a href="{{ route('admin.settings') }}" class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">Settings</a>
                 @endif
             </nav>
 
@@ -66,14 +66,11 @@
             </div>
         </aside>
 
-        <div class="lg:pl-64">
+        <div class="flex-1 min-w-0">
             <header class="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center gap-4 px-4 sm:px-6">
                 <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden text-slate-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <div>
-                    <h1 class="text-base font-semibold text-slate-900">@yield('title', 'Dashboard')</h1>
-                </div>
                 <div class="ml-auto flex items-center gap-3">
                     <a href="{{ route('web.profile') }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
                         <span class="hidden sm:inline">{{ auth()->user()->unique_id }}</span>
@@ -112,14 +109,5 @@
         </div>
     </div>
 
-    <style>
-        .nav-link {
-            @apply flex items-center gap-2 px-3 py-2 rounded-lg text-brand-100 hover:bg-white/10 hover:text-white transition-colors;
-        }
-        .nav-link.active {
-            @apply bg-white/10 text-white font-medium;
-        }
-        [x-cloak] { display: none !important; }
-    </style>
 </body>
 </html>

@@ -9,10 +9,18 @@
                 <h2 class="text-lg font-semibold text-slate-900">Member Management</h2>
                 <p class="text-sm text-slate-500">View and manage all members.</p>
             </div>
-            <form method="GET" class="flex gap-2">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name, email, ID..."
-                       class="rounded-lg border-slate-300 text-sm w-64">
-                <button type="submit" class="rounded-lg bg-brand-600 text-white text-sm px-4 py-2">Search</button>
+            <form method="GET" class="flex items-center gap-2">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name, email, ID..."
+                           class="w-64 rounded-xl border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:bg-white focus:border-brand-500 focus:ring-brand-500 focus:ring-2">
+                </div>
+                <button type="submit" class="rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold px-4 py-2.5 shadow-md shadow-brand-600/25 transition-colors">Search</button>
+                @if(request('search'))
+                    <a href="{{ route('admin.users') }}" class="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 text-sm font-medium px-4 py-2.5 transition-colors">Clear</a>
+                @endif
             </form>
         </div>
 

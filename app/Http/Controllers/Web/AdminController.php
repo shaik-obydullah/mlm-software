@@ -64,6 +64,7 @@ class AdminController extends Controller
         $tiers = CvTier::all();
         $pins = Pin::with(['tier', 'assignedUser:id,name,unique_id'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->search, fn ($q) => $q->where('code', 'like', "%{$request->search}%"))
             ->orderByDesc('id')
             ->paginate(20);
 
