@@ -291,7 +291,7 @@ docker compose exec app php artisan test   # or: composer test
 docker compose exec app vendor/bin/pint --test   # code style
 ```
 
-The suite runs against in-memory SQLite by default (`phpunit.xml`); CI additionally runs the feature suite against MySQL 8 via GitHub Actions (Pint + PHPUnit).
+The suite runs against in-memory SQLite by default (`phpunit.xml`).
 
 ---
 
